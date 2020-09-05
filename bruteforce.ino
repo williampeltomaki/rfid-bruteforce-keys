@@ -28,6 +28,8 @@ byte knownKeys[NR_KNOWN_KEYS][MFRC522::MF_KEY_SIZE] =  {
     {0x73, 0x8f, 0x9a, 0x43, 0x50, 0x22}, // 73 8f 9a 43 50 22
 };
 
+byte blockNumber;
+
 void setup() {
     Serial.begin(9600);     
     while (!Serial);        
@@ -73,8 +75,10 @@ bool try_key(byte block, MFRC522::MIFARE_Key *key) {
 }
 
 void bruteforce() {
+    setBlockNumber();
+
     MFRC522::MIFARE_Key key;
-    for(byte block = 0; block < 64; block++){
+    for(byte block = 0; block < blockNumber; block++){
         for(byte k = 0; k < NR_KNOWN_KEYS; k++){
             for (byte i = 0; i < MFRC522::MF_KEY_SIZE; i++) {
                 key.keyByte[i] = knownKeys[k][i];
@@ -84,10 +88,16 @@ void bruteforce() {
             if (!mfrc522.PICC_IsNewCardPresent() || !mfrc522.PICC_ReadCardSerial()) break;
         }
 
-        if(block == 63) {
+        if(block == blockNumber - 1) {
             Serial.println("Finishing...");
         }
     }
+}
+
+void setBlockNumber(){
+    MFRC522::PICC_Type piccType = mfrc522.PICC_GetType(mfrc522.uid.sak);
+    if(piccType == MFRC522::PICC_TYPE_MIFARE_1K) blockNumber = 64;
+    if(piccType == MFRC522::PICC_TYPE_MIFARE_4K) blockNumber = 256;
 }
 
 void loop() {
