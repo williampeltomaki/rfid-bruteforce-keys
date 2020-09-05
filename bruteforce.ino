@@ -72,13 +72,7 @@ bool try_key(byte block, MFRC522::MIFARE_Key *key) {
     return false;
 }
 
-void loop() {
-    if (!mfrc522.PICC_IsNewCardPresent() || !mfrc522.PICC_ReadCardSerial()) return;
-
-    Serial.print(F("Card UID:"));
-    dump_byte_array(mfrc522.uid.uidByte, mfrc522.uid.size);
-    Serial.println();
-
+void bruteforce() {
     MFRC522::MIFARE_Key key;
     for(byte block = 0; block < 64; block++){
         for(byte k = 0; k < NR_KNOWN_KEYS; k++){
@@ -94,6 +88,12 @@ void loop() {
             Serial.println("Finishing...");
         }
     }
+}
+
+void loop() {
+    if (!mfrc522.PICC_IsNewCardPresent() || !mfrc522.PICC_ReadCardSerial()) return;
+
+    bruteforce();
 
     mfrc522.PICC_HaltA();
     mfrc522.PCD_StopCrypto1();
