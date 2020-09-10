@@ -28,8 +28,6 @@ byte knownKeys[NR_KNOWN_KEYS][MFRC522::MF_KEY_SIZE] =  {
     {0x73, 0x8f, 0x9a, 0x43, 0x50, 0x22}, // 73 8f 9a 43 50 22
 };
 
-byte blockNumber;
-
 void setup() {
     Serial.begin(9600);     
     while (!Serial);        
@@ -57,15 +55,21 @@ bool try_key(byte block, MFRC522::MIFARE_Key *key) {
     status = mfrc522.MIFARE_Read(block, buffer, &byteCount);
 
     if (status == MFRC522::STATUS_OK) {
+        Serial.println();
+        if((block + 4) % 4 == 0) {
+            byte sector = ((block + 4) / 4) - 1;
+            Serial.print(F("---------------------------- sector "));
+            Serial.print(sector);
+            Serial.print(F(" -----------------------------------"));
+        };
+        Serial.println();
+
         Serial.print(F("Success with key:"));
         dump_byte_array((*key).keyByte, MFRC522::MF_KEY_SIZE);
         Serial.println();
 
         Serial.print(F("Block ")); Serial.print(block); Serial.print(F(":"));
         dump_byte_array(buffer, 16);
-
-        Serial.println();
-        Serial.println();
 
         return true;
     }
@@ -75,7 +79,7 @@ bool try_key(byte block, MFRC522::MIFARE_Key *key) {
 }
 
 void bruteforce() {
-    setBlockNumber();
+    byte blockNumber = getBlockNumber();
 
     MFRC522::MIFARE_Key key;
     for(byte block = 0; block < blockNumber; block++){
@@ -89,15 +93,16 @@ void bruteforce() {
         }
 
         if(block == blockNumber - 1) {
+            Serial.println();
             Serial.println("Finishing...");
         }
     }
 }
 
-void setBlockNumber(){
+byte getBlockNumber(){
     MFRC522::PICC_Type piccType = mfrc522.PICC_GetType(mfrc522.uid.sak);
-    if(piccType == MFRC522::PICC_TYPE_MIFARE_1K) blockNumber = 64;
-    if(piccType == MFRC522::PICC_TYPE_MIFARE_4K) blockNumber = 256;
+    if(piccType == MFRC522::PICC_TYPE_MIFARE_1K) return 64;
+    if(piccType == MFRC522::PICC_TYPE_MIFARE_4K) return 256;
 }
 
 void loop() {
